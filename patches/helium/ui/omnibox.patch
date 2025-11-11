@@ -51,6 +51,44 @@
  }
  
  // static
+@@ -378,7 +380,7 @@ void RoundedOmniboxResultsFrame::OnMouse
+ 
+ // Insets used to position |contents_| within |contents_host_|.
+ gfx::Insets RoundedOmniboxResultsFrame::GetContentInsets() {
+-  return gfx::Insets::TLBR(GetNonResultSectionHeight(include_cutout_), 0, 0, 0);
++  return gfx::Insets::TLBR(2, 0, 0, 0);
+ }
+ 
+ BEGIN_METADATA(RoundedOmniboxResultsFrame)
+--- a/chrome/browser/ui/views/omnibox/rounded_omnibox_results_frame.h
++++ b/chrome/browser/ui/views/omnibox/rounded_omnibox_results_frame.h
+@@ -22,7 +22,7 @@ class RoundedOmniboxResultsFrame : publi
+  public:
+   RoundedOmniboxResultsFrame(views::View* contents,
+                              LocationBarView* location_bar,
+-                             bool include_cutout = true);
++                             bool include_cutout = false);
+   RoundedOmniboxResultsFrame(const RoundedOmniboxResultsFrame&) = delete;
+   RoundedOmniboxResultsFrame& operator=(const RoundedOmniboxResultsFrame&) =
+       delete;
+@@ -33,7 +33,7 @@ class RoundedOmniboxResultsFrame : publi
+                                  views::Widget* widget);
+ 
+   // The height of the location bar view part of the omnibox popup.
+-  static int GetNonResultSectionHeight(bool include_cutout = true);
++  static int GetNonResultSectionHeight(bool include_cutout = false);
+ 
+   // How the Widget is aligned relative to the location bar.
+   static gfx::Insets GetLocationBarAlignmentInsets();
+@@ -61,7 +61,7 @@ class RoundedOmniboxResultsFrame : publi
+   raw_ptr<views::View> top_background_ = nullptr;
+   raw_ptr<views::View> contents_host_ = nullptr;
+   raw_ptr<views::View> contents_;
+-  bool include_cutout_ = true;
++  bool include_cutout_ = false;
+ };
+ 
+ #endif  // CHROME_BROWSER_UI_VIEWS_OMNIBOX_ROUNDED_OMNIBOX_RESULTS_FRAME_H_
 --- a/chrome/browser/ui/views/omnibox/omnibox_result_view.cc
 +++ b/chrome/browser/ui/views/omnibox/omnibox_result_view.cc
 @@ -198,9 +198,6 @@ OmniboxResultView::OmniboxResultView(Omn
@@ -174,7 +212,15 @@
    // smaller than this bounds; they'll be centered within the bounds.
 --- a/chrome/browser/ui/views/omnibox/omnibox_popup_view_views.cc
 +++ b/chrome/browser/ui/views/omnibox/omnibox_popup_view_views.cc
-@@ -638,14 +638,7 @@ gfx::Rect OmniboxPopupViewViews::GetTarg
+@@ -19,6 +19,7 @@
+ #include "build/build_config.h"
+ #include "chrome/browser/profiles/profile.h"
+ #include "chrome/browser/ui/color/chrome_color_id.h"
++#include "chrome/browser/ui/layout_constants.h"
+ #include "chrome/browser/ui/omnibox/omnibox_controller.h"
+ #include "chrome/browser/ui/omnibox/omnibox_edit_model.h"
+ #include "chrome/browser/ui/views/frame/browser_view.h"
+@@ -638,14 +639,7 @@ gfx::Rect OmniboxPopupViewViews::GetTarg
    // added if the results section has no height (result set is empty or all
    // results are hidden). See https://crbug.com/1076646 for additional context.
    if (popup_height != 0) {
@@ -186,10 +232,22 @@
 -    int extra_bottom_padding =
 -        GetMatchAtIndex(last_result_index).IsToolbelt() ? 2 : 8;
 -    popup_height += extra_bottom_padding;
-+    popup_height += 6;
++    popup_height += 8;
    }
  
    // Add enough space on the top and bottom so it looks like there is the same
+@@ -659,6 +653,11 @@ gfx::Rect OmniboxPopupViewViews::GetTarg
+       -RoundedOmniboxResultsFrame::GetLocationBarAlignmentInsets());
+   content_rect.set_height(popup_height);
+ 
++  // Offset the popup to appear below the location bar.
++  int location_bar_height = location_bar_view_->GetBoundsInScreen().height();
++  content_rect.set_y(content_rect.y() + location_bar_height +
++      GetLayoutConstant(TOOLBAR_STANDARD_SPACING));
++
+   if (base::FeatureList::IsEnabled(omnibox::kWebUIOmniboxPopupDebug) &&
+       omnibox::kWebUIOmniboxPopupDebugSxSParam.Get()) {
+     if (auto bounds = GetDebugWidgetBounds(location_bar_view_, popup_height)) {
 --- a/chrome/browser/ui/views/omnibox/omnibox_suggestion_button_row_view.cc
 +++ b/chrome/browser/ui/views/omnibox/omnibox_suggestion_button_row_view.cc
 @@ -73,7 +73,7 @@ class OmniboxSuggestionRowChip : public
