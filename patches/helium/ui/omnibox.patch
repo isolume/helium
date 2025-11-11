@@ -47,19 +47,10 @@
      return gfx::Insets::TLBR(6, 1, 5, 1);
    }
 -  return gfx::Insets::VH(5, 6);
-+  return gfx::Insets::VH(3, 8);
++  return gfx::Insets::TLBR(3, 8, -1, 8);
  }
  
  // static
-@@ -378,7 +380,7 @@ void RoundedOmniboxResultsFrame::OnMouse
- 
- // Insets used to position |contents_| within |contents_host_|.
- gfx::Insets RoundedOmniboxResultsFrame::GetContentInsets() {
--  return gfx::Insets::TLBR(GetNonResultSectionHeight(include_cutout_), 0, 0, 0);
-+  return gfx::Insets::TLBR(GetNonResultSectionHeight(include_cutout_) - 4, 0, 0, 0);
- }
- 
- BEGIN_METADATA(RoundedOmniboxResultsFrame)
 --- a/chrome/browser/ui/views/omnibox/omnibox_result_view.cc
 +++ b/chrome/browser/ui/views/omnibox/omnibox_result_view.cc
 @@ -198,9 +198,6 @@ OmniboxResultView::OmniboxResultView(Omn
@@ -93,7 +84,7 @@
    return views::CreateRoundedRectBackground(
 -      GetOmniboxBackgroundColorId(part_state), radii);
 +      GetOmniboxBackgroundColorId(part_state),
-+      kIPHBackgroundBorderRadius);
++          kIPHBackgroundBorderRadius);
  }
  
  void OmniboxResultView::SetMatch(const AutocompleteMatch& match) {
@@ -195,7 +186,7 @@
 -    int extra_bottom_padding =
 -        GetMatchAtIndex(last_result_index).IsToolbelt() ? 2 : 8;
 -    popup_height += extra_bottom_padding;
-+    popup_height += 2;
++    popup_height += 6;
    }
  
    // Add enough space on the top and bottom so it looks like there is the same
