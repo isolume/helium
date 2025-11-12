@@ -35,7 +35,30 @@ jobs:
 
       - name: Prepare directories
         run: |
-          mkdir -p "$DOWNLOAD_CACHE" "$BUILD_DIR" "$BUILD_DIR/components" "$DOMAIN_CACHE" "$CCACHE_DIR"
+          mkdir -p \
+            "$DOWNLOAD_CACHE" \
+            "$BUILD_DIR" \
+            "$BUILD_DIR/components" \
+            "$BUILD_DIR/third_party/search_engines_data" \
+            "$DOMAIN_CACHE" \
+            "$CCACHE_DIR"
+
+      - name: Ensure output parents exist
+        run: |
+          python3 - <<'PY'
+          import configparser
+          import os
+          from pathlib import Path
+
+          build_dir = Path(os.environ['BUILD_DIR'])
+          cfg = configparser.ConfigParser()
+          for ini in ('downloads.ini', 'extras.ini'):
+              cfg.read(ini)
+          for section in cfg.sections():
+              output_path = Path(cfg[section].get('output_path', '.'))
+              target_dir = (build_dir / output_path).parent
+              target_dir.mkdir(parents=True, exist_ok=True)
+          PY
 
       - name: Restore download cache
         uses: actions/cache@v4
