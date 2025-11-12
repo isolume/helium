@@ -69,7 +69,7 @@ jobs:
       - name: Prepare Chromium tree
         run: |
           python3 utils/prune_binaries.py "$BUILD_DIR" pruning.list
-          python3 utils/patches.py apply --path "$BUILD_DIR"
+          python3 utils/patches.py apply "$BUILD_DIR" patches
           python3 utils/domain_substitution.py apply \
             --regex domain_regex.list \
             --files domain_substitution.list \
