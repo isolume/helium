@@ -1,0 +1,41 @@
+--- a/chrome/browser/ui/views/frame/immersive_mode_controller_mac.h
++++ b/chrome/browser/ui/views/frame/immersive_mode_controller_mac.h
+@@ -132,6 +132,7 @@ class ImmersiveModeControllerMac : public ImmersiveModeController,
+ 
+   raw_ptr<BrowserView> browser_view_ = nullptr;  // weak
+   std::unique_ptr<ImmersiveRevealedLock> focus_lock_;
++  std::unique_ptr<ImmersiveRevealedLock> menu_bar_reveal_lock_;
+   bool enabled_ = false;
+   base::ScopedObservation<views::View, views::ViewObserver>
+       top_container_observation_{this};
+--- a/chrome/browser/ui/views/frame/immersive_mode_controller_mac.mm
++++ b/chrome/browser/ui/views/frame/immersive_mode_controller_mac.mm
+@@ -246,6 +246,7 @@ void ImmersiveModeControllerMac::SetEnabled(bool enabled) {
+     browser_view_->overlay_widget()->SetNativeWindowProperty(
+         views::NativeWidgetMacNSWindowHost::kMovedContentNSView, nullptr);
+ 
++    menu_bar_reveal_lock_.reset();
+     browser_view_->GetWidget()->GetFocusManager()->RemoveFocusChangeListener(
+         this);
+     focus_lock_.reset();
+@@ -388,6 +389,23 @@ void ImmersiveModeControllerMac::OnImmersiveModeMenuBarRevealChanged(
+     double reveal_amount) {
+   reveal_amount_ = reveal_amount;
++  // Reveal the toolbar as soon as the menu bar begins to slide down so the
++  // traffic lights appear visually connected to the browser chrome.
++  const bool should_lock_toolbar =
++      enabled_ && reveal_amount_ > 0 &&
++      !fullscreen_utils::IsAlwaysShowToolbarEnabled(browser_view_->browser()) &&
++      !fullscreen_utils::IsInContentFullscreen(browser_view_->browser());
++
++  if (should_lock_toolbar) {
++    if (!menu_bar_reveal_lock_) {
++      menu_bar_reveal_lock_ = GetRevealedLock(ANIMATE_REVEAL_NO);
++    }
++  } else if (menu_bar_reveal_lock_) {
++    menu_bar_reveal_lock_.reset();
++  }
++
+   if (!browser_view_->infobar_container()->IsEmpty()) {
+     browser_view_->InvalidateLayout();
+   }

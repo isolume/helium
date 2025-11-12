@@ -233,6 +233,7 @@ helium/ui/settings-page-icons.patch
 helium/ui/square-ntp-monograms.patch
 helium/ui/set-gray-as-default-theme.patch
 helium/ui/improve-toast.patch
+helium/ui/fullscreen-menubar-reveal.patch
 helium/ui/square-interstitial-buttons.patch
 helium/ui/center-window-on-launch.patch
 helium/ui/remove-devtools-annoyances.patch
