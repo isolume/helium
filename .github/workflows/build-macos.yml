@@ -35,7 +35,7 @@ jobs:
 
       - name: Prepare directories
         run: |
-          mkdir -p "$DOWNLOAD_CACHE" "$BUILD_DIR" "$DOMAIN_CACHE" "$CCACHE_DIR"
+          mkdir -p "$DOWNLOAD_CACHE" "$BUILD_DIR" "$BUILD_DIR/components" "$DOMAIN_CACHE" "$CCACHE_DIR"
 
       - name: Restore download cache
         uses: actions/cache@v4
