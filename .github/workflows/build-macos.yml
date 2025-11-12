@@ -81,12 +81,12 @@ jobs:
         run: |
           mkdir -p out/helium-mac
           cat ../../flags.gn > out/helium-mac/args.gn
-          cat <<'EOF' >> out/helium-mac/args.gn
-target_cpu="arm64"
-is_debug=false
-is_official_build=true
-treat_warnings_as_errors=false
-EOF
+          printf '%s\n' \
+            'target_cpu="arm64"' \
+            'is_debug=false' \
+            'is_official_build=true' \
+            'treat_warnings_as_errors=false' \
+            >> out/helium-mac/args.gn
           gn gen out/helium-mac
 
       - name: Build Chromium
