@@ -56,13 +56,15 @@ jobs:
         run: |
           python3 utils/downloads.py retrieve \
             --cache "$DOWNLOAD_CACHE" \
-            --ini downloads.ini
+            --ini downloads.ini \
+            --ini extras.ini
 
       - name: Unpack sources
         run: |
           python3 utils/downloads.py unpack \
             --cache "$DOWNLOAD_CACHE" \
             --ini downloads.ini \
+            --ini extras.ini \
             --tar-path gtar \
             "$BUILD_DIR"
 
