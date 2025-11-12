@@ -219,8 +219,11 @@ def _callback(args):
             file_list += '\n... and ' + str(len(unremovable_files) - 5) + ' more'
             get_logger().debug('files that could not be pruned:\n%s',
                                '\n'.join(f for f in unremovable_files))
-        get_logger().error('%d files could not be pruned:\n%s', len(unremovable_files), file_list)
-        sys.exit(1)
+        logger = get_logger()
+        log_fn = logger.warning if args.ignore_missing else logger.error
+        log_fn('%d files could not be pruned:\n%s', len(unremovable_files), file_list)
+        if not args.ignore_missing:
+            sys.exit(1)
 
 
 def main():
@@ -236,6 +239,10 @@ def main():
                         choices=('amd64', 'i386'),
                         help=('Skip pruning the sysroot for the specified architecture. '
                               'Not needed when --keep-contingent-paths is used.'))
+    parser.add_argument('--ignore-missing',
+                        action='store_true',
+                        help=('Continue even if files from pruning.list are absent. '
+                              'Useful if the source archive was already pruned (e.g. the lite tarball).'))
     add_common_params(parser)
     parser.set_defaults(callback=_callback)
 
