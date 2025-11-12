@@ -1,0 +1,106 @@
+name: build-macos
+
+on:
+  workflow_dispatch:
+
+jobs:
+  macos:
+    name: Build Helium for macOS
+    runs-on: macos-14
+    timeout-minutes: 1140
+    env:
+      DOWNLOAD_CACHE: ${{ github.workspace }}/build/download_cache
+      BUILD_DIR: ${{ github.workspace }}/build/src
+      DOMAIN_CACHE: ${{ github.workspace }}/build/domain_subst_cache
+      CCACHE_DIR: ${{ github.workspace }}/.ccache
+      DEPOT_TOOLS: ${{ github.workspace }}/depot_tools
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install build dependencies
+        run: |
+          brew update
+          brew install ninja ccache gnu-tar cmake pkg-config coreutils
+
+      - name: Fetch depot_tools
+        run: |
+          git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git "$DEPOT_TOOLS"
+          echo "$DEPOT_TOOLS" >> "$GITHUB_PATH"
+
+      - name: Prepare directories
+        run: |
+          mkdir -p "$DOWNLOAD_CACHE" "$BUILD_DIR" "$DOMAIN_CACHE" "$CCACHE_DIR"
+
+      - name: Restore download cache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.DOWNLOAD_CACHE }}
+          key: downloads-macos-${{ hashFiles('downloads.ini', 'domain_substitution.list', 'domain_regex.list', 'chromium_version.txt') }}
+
+      - name: Restore ccache
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-macos-${{ github.ref_name }}-${{ hashFiles('chromium_version.txt') }}
+          restore-keys: |
+            ccache-macos-${{ github.ref_name }}-
+            ccache-macos-
+
+      - name: Retrieve source archives
+        run: |
+          python3 utils/downloads.py retrieve \
+            --cache "$DOWNLOAD_CACHE" \
+            --ini downloads.ini
+
+      - name: Unpack sources
+        run: |
+          python3 utils/downloads.py unpack \
+            --cache "$DOWNLOAD_CACHE" \
+            --ini downloads.ini \
+            --tar-path gtar \
+            "$BUILD_DIR"
+
+      - name: Prepare Chromium tree
+        run: |
+          python3 utils/prune_binaries.py "$BUILD_DIR" pruning.list
+          python3 utils/patches.py apply --path "$BUILD_DIR"
+          python3 utils/domain_substitution.py apply \
+            --regex domain_regex.list \
+            --files domain_substitution.list \
+            --cache "$DOMAIN_CACHE" \
+            "$BUILD_DIR"
+
+      - name: Configure GN args
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          mkdir -p out/helium-mac
+          cat ../../flags.gn > out/helium-mac/args.gn
+          cat <<'EOF' >> out/helium-mac/args.gn
+target_cpu="arm64"
+is_debug=false
+is_official_build=true
+treat_warnings_as_errors=false
+EOF
+          gn gen out/helium-mac
+
+      - name: Build Chromium
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          ninja -C out/helium-mac chrome
+
+      - name: Package unsigned app
+        working-directory: ${{ env.BUILD_DIR }}/out/helium-mac
+        run: |
+          zip -r "$GITHUB_WORKSPACE/helium-macos-unsigned.zip" Chromium.app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: helium-macos-unsigned
+          path: helium-macos-unsigned.zip
